@@ -49,6 +49,8 @@ def parse_args():
     parser.add_argument('--masked_items_image', default='', type=str, help='')
     parser.add_argument('--masked_items_text', default='', type=str, help='')
     parser.add_argument('--colab', default=False, type=bool, help='')
+    parser.add_argument('--feat_prop', default='co', type=str, help='')
+    parser.add_argument('--prop_layers', default=3, type=int, help='')
 
     #train
     parser.add_argument('--data_path', nargs='?', default='./data/', help='Input data path.')
