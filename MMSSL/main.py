@@ -92,7 +92,7 @@ class Trainer(object):
             self.text_feats[masked_items_text] = np.random.rand(len(masked_items_text), self.text_feat_dim)
         elif args.strategy == 'feat_prop':
             if args.feat_prop == 'co':
-                item_item = self.ui_graph.toarray().transpose().dot(self.ui_graph.toarray())
+                item_item = self.ui_graph.transpose().dot(self.ui_graph).toarray()
                 # get non masked items
                 non_masked_items = list(set(list(range(self.n_items))).difference(masked_items_image))
                 # binarize adjacency matrix
@@ -115,7 +115,7 @@ class Trainer(object):
                     propagated_features[non_masked_items] = torch.tensor(self.image_feats[non_masked_items])
                 self.image_feats[masked_items_image] = propagated_features[masked_items_image].detach().cpu().numpy()
 
-                item_item = self.ui_graph.toarray().transpose().dot(self.ui_graph.toarray())
+                item_item = self.ui_graph.transpose().dot(self.ui_graph).toarray()
                 # get non masked items
                 non_masked_items = list(set(list(range(self.n_items))).difference(masked_items_text))
                 # binarize adjacency matrix
