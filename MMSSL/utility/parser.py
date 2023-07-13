@@ -48,6 +48,7 @@ def parse_args():
     parser.add_argument('--strategy', default='zeros', type=str, help='')
     parser.add_argument('--masked_items_image', default='', type=str, help='')
     parser.add_argument('--masked_items_text', default='', type=str, help='')
+    parser.add_argument('--colab', default=False, type=bool, help='')
 
     #train
     parser.add_argument('--data_path', nargs='?', default='./data/', help='Input data path.')
