@@ -112,7 +112,11 @@ def test_one_user(x):
 def test_torch(ua_embeddings, ia_embeddings, users_to_test, is_val, drop_flag=False, batch_test_flag=False):
     result = {'precision': np.zeros(len(Ks)), 'recall': np.zeros(len(Ks)), 'ndcg': np.zeros(len(Ks)),
               'hit_ratio': np.zeros(len(Ks)), 'auc': 0.}
-    pool = multiprocessing.Pool(cores)
+
+    if args.colab:
+        pool = multiprocessing.Pool(16)
+    else:
+        pool = multiprocessing.Pool(cores)
 
     u_batch_size = BATCH_SIZE * 2
     i_batch_size = BATCH_SIZE
