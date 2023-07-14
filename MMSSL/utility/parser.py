@@ -45,6 +45,7 @@ def parse_args():
     parser.add_argument('--loadModelPath', default='/home/ww/Code/work3/BSTRec/Model/retailrocket/for_meta_hidden_dim_dim__8_retailrocket_2021_07_10__18_35_32_lr_0.0003_reg_0.01_batch_size_1024_gnn_layer_[16,16,16].pth', type=str, help='loadModelPath')
     parser.add_argument('--title', default="try_to_draw_line", type=str, help='')  #
 
+    parser.add_argument('--missing_features', default='True', type=str, help='')
     parser.add_argument('--strategy', default='zeros', type=str, help='')
     parser.add_argument('--masked_items_image', default='', type=str, help='')
     parser.add_argument('--masked_items_text', default='', type=str, help='')
