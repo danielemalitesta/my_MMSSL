@@ -20,9 +20,9 @@ do
     do
       if [[ $str == feat_prop ]]
       then
-        echo main.py --dataset $1 --strategy $str --feat_prop co --masked_items_image ./data/$1/$sam"_"$ran.txt --masked_items_text ./data/$1/$sam"_"$ran.txt
+        python3.8 main.py --dataset $1 --strategy $str --feat_prop co --masked_items_image ./data/$1/$sam"_"$ran.txt --masked_items_text ./data/$1/$sam"_"$ran.txt
       else
-        echo main.py --dataset $1 --strategy $str --masked_items_image ./data/$1/$sam"_"$ran.txt --masked_items_text ./data/$1/$sam"_"$ran.txt
+        python3.8 main.py --dataset $1 --strategy $str --masked_items_image ./data/$1/$sam"_"$ran.txt --masked_items_text ./data/$1/$sam"_"$ran.txt
       fi
     done
   done
