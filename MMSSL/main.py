@@ -542,7 +542,7 @@ class Trainer(object):
             del ua_embeddings, ia_embeddings, G_ua_embeddings, G_ia_embeddings, G_u_g_embeddings, G_neg_i_g_embeddings, G_pos_i_g_embeddings
 
             if math.isnan(loss) == True:
-                print('ERROR: loss is nan.')
+                self.logger.logging('ERROR: loss is nan.')
                 sys.exit(1)
 
             if (epoch + 1) % args.verbose != 0:
