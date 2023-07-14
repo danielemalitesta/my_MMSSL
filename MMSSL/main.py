@@ -116,7 +116,8 @@ class Trainer(object):
                         print(f'Propagation layer: {idx + 1}')
                         propagated_features = matmul(adj.cuda(), propagated_features.cuda())
                         propagated_features[non_masked_items] = torch.tensor(self.image_feats[non_masked_items]).cuda()
-                    self.image_feats[masked_items_image] = propagated_features[masked_items_image].detach().cpu().numpy()
+                    self.image_feats[masked_items_image] = propagated_features[
+                        masked_items_image].detach().cpu().numpy()
 
                     item_item = self.ui_graph.transpose().dot(self.ui_graph).toarray()
                     # get non masked items
@@ -341,8 +342,8 @@ class Trainer(object):
             between_sim = torch.cat(tmp_between_sim_list, dim=-1)
 
             losses.append(-torch.log(between_sim[:, i * batch_size:(i + 1) * batch_size].diag() / (
-                        refl_sim.sum(1) + between_sim.sum(1) - refl_sim[:,
-                                                               i * batch_size:(i + 1) * batch_size].diag()) + 1e-8))
+                    refl_sim.sum(1) + between_sim.sum(1) - refl_sim[:,
+                                                           i * batch_size:(i + 1) * batch_size].diag()) + 1e-8))
 
             del refl_sim, between_sim, tmp_refl_sim_list, tmp_between_sim_list
 
@@ -592,7 +593,7 @@ class Trainer(object):
                 best_recall = ret['recall'][1]
                 test_ret = self.test(users_to_test, is_val=False)
                 self.logger.logging("Test_Recall@%d: %.5f,  precision=[%.5f], ndcg=[%.5f]" % (
-                eval(args.Ks)[1], test_ret['recall'][1], test_ret['precision'][1], test_ret['ndcg'][1]))
+                    eval(args.Ks)[1], test_ret['recall'][1], test_ret['precision'][1], test_ret['ndcg'][1]))
                 stopping_step = 0
             elif stopping_step < args.early_stopping_patience:
                 stopping_step += 1
@@ -641,6 +642,16 @@ if __name__ == '__main__':
         args.missing_features = True
     else:
         args.missing_features = False
+
+    if args.dataset == 'baby':
+        args.D_lr = 3e-4
+        args.cl_rate = 0.03
+        args.drop_rate = 0.2
+        args.model_cat_rate = 0.55
+        args.head_num = 4
+        args.G_rate = 0.0001
+        args.G_drop1 = 0.31
+        args.G_drop2 = 0.5
 
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
     set_seed(args.seed)
