@@ -72,77 +72,78 @@ class Trainer(object):
         else:
             raise FileNotFoundError('File for masked items not found!')
 
-        if args.strategy == 'zeros':
-            self.image_feats[masked_items_image] = np.zeros((1, self.image_feat_dim))
-            self.text_feats[masked_items_text] = np.zeros((1, self.text_feat_dim))
-        elif args.strategy == 'mean':
-            mask = np.ones(self.n_items, dtype=bool)
-            mask[masked_items_image] = False
-            result = self.image_feats[mask]
-            mean_ = result.mean(axis=0)
-            self.image_feats[masked_items_image] = mean_
-
-            mask = np.ones(self.n_items, dtype=bool)
-            mask[masked_items_text] = False
-            result = self.text_feats[mask]
-            mean_ = result.mean(axis=0)
-            self.text_feats[masked_items_text] = mean_
-        elif args.strategy == 'random':
-            self.image_feats[masked_items_image] = np.random.rand(len(masked_items_image), self.image_feat_dim)
-            self.text_feats[masked_items_text] = np.random.rand(len(masked_items_text), self.text_feat_dim)
-        elif args.strategy == 'feat_prop':
-            if args.feat_prop == 'co':
-                item_item = self.ui_graph.transpose().dot(self.ui_graph).toarray()
-                # get non masked items
-                non_masked_items = list(set(list(range(self.n_items))).difference(masked_items_image))
-                # binarize adjacency matrix
-                item_item[item_item >= 1] = 1.0
-                # set zeros as initialization
+        if args.missing_features:
+            if args.strategy == 'zeros':
                 self.image_feats[masked_items_image] = np.zeros((1, self.image_feat_dim))
-                # get sparse adjacency matrix
-                row, col = item_item.nonzero()
-                edge_index = np.array([row, col])
-                edge_index = torch.tensor(edge_index, dtype=torch.int64)
-                adj = SparseTensor(row=edge_index[0],
-                                   col=edge_index[1],
-                                   sparse_sizes=(self.n_items, self.n_items))
-                # normalize adjacency matrix
-                adj = self.compute_normalized_laplacian(adj, 0.5)
-                # feature propagation
-                propagated_features = torch.tensor(self.image_feats)
-                for _ in range(args.prop_layers):
-                    propagated_features = matmul(adj, propagated_features)
-                    propagated_features[non_masked_items] = torch.tensor(self.image_feats[non_masked_items])
-                self.image_feats[masked_items_image] = propagated_features[masked_items_image].detach().cpu().numpy()
-
-                item_item = self.ui_graph.transpose().dot(self.ui_graph).toarray()
-                # get non masked items
-                non_masked_items = list(set(list(range(self.n_items))).difference(masked_items_text))
-                # binarize adjacency matrix
-                item_item[item_item >= 1] = 1.0
-                # set zeros as initialization
                 self.text_feats[masked_items_text] = np.zeros((1, self.text_feat_dim))
-                # get sparse adjacency matrix
-                row, col = item_item.nonzero()
-                edge_index = np.array([row, col])
-                edge_index = torch.tensor(edge_index, dtype=torch.int64)
-                adj = SparseTensor(row=edge_index[0],
-                                   col=edge_index[1],
-                                   sparse_sizes=(self.n_items, self.n_items))
-                # normalize adjacency matrix
-                adj = self.compute_normalized_laplacian(adj, 0.5)
-                # feature propagation
-                propagated_features = torch.tensor(self.text_feats)
-                for _ in range(args.prop_layers):
-                    propagated_features = matmul(adj, propagated_features)
-                    propagated_features[non_masked_items] = torch.tensor(self.text_feats[non_masked_items])
-                self.text_feats[masked_items_text] = propagated_features[masked_items_text].detach().cpu().numpy()
-            elif args.feat_prop == 'rev':
-                pass
+            elif args.strategy == 'mean':
+                mask = np.ones(self.n_items, dtype=bool)
+                mask[masked_items_image] = False
+                result = self.image_feats[mask]
+                mean_ = result.mean(axis=0)
+                self.image_feats[masked_items_image] = mean_
+
+                mask = np.ones(self.n_items, dtype=bool)
+                mask[masked_items_text] = False
+                result = self.text_feats[mask]
+                mean_ = result.mean(axis=0)
+                self.text_feats[masked_items_text] = mean_
+            elif args.strategy == 'random':
+                self.image_feats[masked_items_image] = np.random.rand(len(masked_items_image), self.image_feat_dim)
+                self.text_feats[masked_items_text] = np.random.rand(len(masked_items_text), self.text_feat_dim)
+            elif args.strategy == 'feat_prop':
+                if args.feat_prop == 'co':
+                    item_item = self.ui_graph.transpose().dot(self.ui_graph).toarray()
+                    # get non masked items
+                    non_masked_items = list(set(list(range(self.n_items))).difference(masked_items_image))
+                    # binarize adjacency matrix
+                    item_item[item_item >= 1] = 1.0
+                    # set zeros as initialization
+                    self.image_feats[masked_items_image] = np.zeros((1, self.image_feat_dim))
+                    # get sparse adjacency matrix
+                    row, col = item_item.nonzero()
+                    edge_index = np.array([row, col])
+                    edge_index = torch.tensor(edge_index, dtype=torch.int64)
+                    adj = SparseTensor(row=edge_index[0],
+                                       col=edge_index[1],
+                                       sparse_sizes=(self.n_items, self.n_items))
+                    # normalize adjacency matrix
+                    adj = self.compute_normalized_laplacian(adj, 0.5)
+                    # feature propagation
+                    propagated_features = torch.tensor(self.image_feats)
+                    for _ in range(args.prop_layers):
+                        propagated_features = matmul(adj, propagated_features)
+                        propagated_features[non_masked_items] = torch.tensor(self.image_feats[non_masked_items])
+                    self.image_feats[masked_items_image] = propagated_features[masked_items_image].detach().cpu().numpy()
+
+                    item_item = self.ui_graph.transpose().dot(self.ui_graph).toarray()
+                    # get non masked items
+                    non_masked_items = list(set(list(range(self.n_items))).difference(masked_items_text))
+                    # binarize adjacency matrix
+                    item_item[item_item >= 1] = 1.0
+                    # set zeros as initialization
+                    self.text_feats[masked_items_text] = np.zeros((1, self.text_feat_dim))
+                    # get sparse adjacency matrix
+                    row, col = item_item.nonzero()
+                    edge_index = np.array([row, col])
+                    edge_index = torch.tensor(edge_index, dtype=torch.int64)
+                    adj = SparseTensor(row=edge_index[0],
+                                       col=edge_index[1],
+                                       sparse_sizes=(self.n_items, self.n_items))
+                    # normalize adjacency matrix
+                    adj = self.compute_normalized_laplacian(adj, 0.5)
+                    # feature propagation
+                    propagated_features = torch.tensor(self.text_feats)
+                    for _ in range(args.prop_layers):
+                        propagated_features = matmul(adj, propagated_features)
+                        propagated_features[non_masked_items] = torch.tensor(self.text_feats[non_masked_items])
+                    self.text_feats[masked_items_text] = propagated_features[masked_items_text].detach().cpu().numpy()
+                elif args.feat_prop == 'rev':
+                    pass
+                else:
+                    raise NotImplementedError('This aggregation has not been implemented yet!')
             else:
-                raise NotImplementedError('This aggregation has not been implemented yet!')
-        else:
-            raise NotImplementedError('This strategy has not been implemented yet!')
+                raise NotImplementedError('This strategy has not been implemented yet!')
 
         self.iu_graph = self.ui_graph.T
         self.ui_graph = self.matrix_to_tensor(self.csr_norm(self.ui_graph, mean_flag=True))
@@ -632,6 +633,12 @@ def set_seed(seed):
 
 
 if __name__ == '__main__':
+
+    if args.missing_features == 'True':
+        args.missing_features = True
+    else:
+        args.missing_features = False
+
     os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
     set_seed(args.seed)
     config = dict()
