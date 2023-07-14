@@ -1,10 +1,10 @@
 import pandas as pd
 import random
 
-data = 'tiktok'
+data = 'baby'
 seed = 42
 num_repeats = 5
-num_items = 6710
+num_items = 7050
 
 for n in range(num_repeats):
     random.seed(seed + n)

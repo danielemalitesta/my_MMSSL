@@ -37,7 +37,7 @@ class Trainer(object):
     def __init__(self, data_config):
 
         self.task_name = "%s_%s_%s" % (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), args.dataset, args.cf_model,)
-        self.logger = Logger(filename=self.task_name, is_debug=args.debug)
+        self.logger = Logger(filename=self.task_name, is_debug=False)
         self.logger.logging("PID: %d" % os.getpid())
         self.logger.logging(str(args))
 
