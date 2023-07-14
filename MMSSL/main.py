@@ -543,7 +543,7 @@ class Trainer(object):
 
             if math.isnan(loss) == True:
                 self.logger.logging('ERROR: loss is nan.')
-                break
+                sys.exit(1)
 
             if (epoch + 1) % args.verbose != 0:
                 perf_str = 'Epoch %d [%.1fs]: train==[%.5f=%.5f + %.5f + %.5f  + %.5f]' % (
