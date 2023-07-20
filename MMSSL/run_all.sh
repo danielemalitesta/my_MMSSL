@@ -1,6 +1,6 @@
 #!/bin/bash
 
-strategies=(zeros mean random feat_prop)
+strategies=(random feat_prop)
 sampled_datasets=(sampled_10
                   sampled_20
                   sampled_30
