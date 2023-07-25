@@ -13,22 +13,22 @@ sampled_datasets=(sampled_10
 random=(1 2 3 4 5)
 prop_layers=(1 2)
 
-for str in ${strategies[@]};
+for pr in ${prop_layers[@]};
 do
-  for sam in ${sampled_datasets[@]};
+  for str in ${strategies[@]};
   do
-    for ran in ${random[@]};
+    for sam in ${sampled_datasets[@]};
     do
-      echo $str $sam $ran
-      if [[ $str == feat_prop ]]
-      then
-        for pr in ${prop_layers[@]};
-        do
+      for ran in ${random[@]};
+      do
+        echo $str $sam $ran
+        if [[ $str == feat_prop ]]
+        then
           python3.8 main.py --dataset $1 --strategy $str --feat_prop co --prop_layers $pr --masked_items_image ./data/$1/$sam"_"$ran.txt --masked_items_text ./data/$1/$sam"_"$ran.txt
-        done
-      else
-        python3.8 main.py --dataset $1 --strategy $str --masked_items_image ./data/$1/$sam"_"$ran.txt --masked_items_text ./data/$1/$sam"_"$ran.txt
-      fi
+        else
+          python3.8 main.py --dataset $1 --strategy $str --masked_items_image ./data/$1/$sam"_"$ran.txt --masked_items_text ./data/$1/$sam"_"$ran.txt
+        fi
+      done
     done
   done
 done
