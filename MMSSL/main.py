@@ -36,6 +36,7 @@ args = parse_args()
 class Trainer(object):
     def __init__(self, data_config):
 
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.task_name = "%s_%s_%s" % (datetime.now().strftime('%Y-%m-%d %H:%M:%S'), args.dataset, args.cf_model,)
         self.logger = Logger(filename=self.task_name, is_debug=args.debug)
         self.logger.logging("PID: %d" % os.getpid())
@@ -55,8 +56,9 @@ class Trainer(object):
         self.image_feat_dim = self.image_feats.shape[-1]
         self.text_feat_dim = self.text_feats.shape[-1]
         self.ui_graph = self.ui_graph_raw = pickle.load(open(args.data_path + args.dataset + '/train_mat', 'rb'))
-        self.image_ui_graph_tmp = self.text_ui_graph_tmp = torch.tensor(self.ui_graph_raw.todense()).cuda()
-        self.image_iu_graph_tmp = self.text_iu_graph_tmp = torch.tensor(self.ui_graph_raw.T.todense()).cuda()
+        self.image_ui_graph_tmp = self.text_ui_graph_tmp = torch.tensor(self.ui_graph_raw.todense(), device=self.device)
+        self.image_iu_graph_tmp = self.text_iu_graph_tmp = torch.tensor(self.ui_graph_raw.T.todense(),
+                                                                        device=self.device)
         self.image_ui_index = {'x': [], 'y': []}
         self.text_ui_index = {'x': [], 'y': []}
         self.n_users = self.ui_graph.shape[0]
@@ -97,25 +99,34 @@ class Trainer(object):
                     # get non masked items
                     non_masked_items = list(set(list(range(self.n_items))).difference(masked_items_image))
                     # binarize adjacency matrix
-                    item_item[item_item >= 1] = 1.0
+                    # item_item[item_item >= 1] = 1.0
                     # set zeros as initialization
                     self.image_feats[masked_items_image] = np.zeros((1, self.image_feat_dim))
                     # get sparse adjacency matrix
-                    row, col = item_item.nonzero()
-                    edge_index = np.array([row, col])
-                    edge_index = torch.tensor(edge_index, dtype=torch.int64)
-                    adj = SparseTensor(row=edge_index[0],
-                                       col=edge_index[1],
-                                       sparse_sizes=(self.n_items, self.n_items))
+                    knn_val, knn_ind = torch.topk(torch.tensor(item_item, device=self.device), 20, dim=-1)
+                    items_cols = torch.flatten(knn_ind).to(self.device)
+                    ir = torch.tensor(list(range(item_item.shape[0])), dtype=torch.int64, device=self.device)
+                    items_rows = torch.repeat_interleave(ir, 20).to(self.device)
+                    # row, col = item_item.nonzero()
+                    # edge_index = np.array([row, col])
+                    # edge_index = torch.tensor(edge_index, dtype=torch.int64)
+                    # adj = SparseTensor(row=edge_index[0],
+                    #                    col=edge_index[1],
+                    #                    sparse_sizes=(self.n_items, self.n_items))
+                    adj = SparseTensor(row=items_rows,
+                                       col=items_cols,
+                                       value=torch.tensor([1.0] * items_rows.shape[0], device=self.device),
+                                       sparse_sizes=(item_item.shape[0], item_item.shape[0]))
                     # normalize adjacency matrix
                     adj = self.compute_normalized_laplacian(adj, 0.5)
                     # feature propagation
 
-                    propagated_features = torch.tensor(self.image_feats).cuda()
+                    propagated_features = torch.tensor(self.image_feats, device=self.device)
                     for idx in range(args.prop_layers):
                         print(f'Propagation layer: {idx + 1}')
-                        propagated_features = matmul(adj.cuda(), propagated_features.cuda())
-                        propagated_features[non_masked_items] = torch.tensor(self.image_feats[non_masked_items]).cuda()
+                        propagated_features = matmul(adj.to(self.device), propagated_features.to(self.device))
+                        propagated_features[non_masked_items] = torch.tensor(self.image_feats[non_masked_items],
+                                                                             device=self.device)
                     self.image_feats[masked_items_image] = propagated_features[
                         masked_items_image].detach().cpu().numpy()
 
@@ -136,11 +147,12 @@ class Trainer(object):
                     # normalize adjacency matrix
                     adj = self.compute_normalized_laplacian(adj, 0.5)
                     # feature propagation
-                    propagated_features = torch.tensor(self.text_feats).cuda()
+                    propagated_features = torch.tensor(self.text_feats, device=self.device)
                     for idx in range(args.prop_layers):
                         print(f'Propagation layer: {idx + 1}')
-                        propagated_features = matmul(adj.cuda(), propagated_features.cuda())
-                        propagated_features[non_masked_items] = torch.tensor(self.text_feats[non_masked_items]).cuda()
+                        propagated_features = matmul(adj.to(self.device), propagated_features.to(self.device))
+                        propagated_features[non_masked_items] = torch.tensor(self.text_feats[non_masked_items],
+                                                                             device=self.device)
                     self.text_feats[masked_items_text] = propagated_features[masked_items_text].detach().cpu().numpy()
                 elif args.feat_prop == 'rev':
                     pass
@@ -156,8 +168,8 @@ class Trainer(object):
         self.image_iu_graph = self.text_iu_graph = self.iu_graph
         self.model = MMSSL(self.n_users, self.n_items, self.emb_dim, self.weight_size, self.mess_dropout,
                            self.image_feats, self.text_feats)
-        self.model = self.model.cuda()
-        self.D = Discriminator(self.n_items).cuda()
+        self.model = self.model.to(self.device)
+        self.D = Discriminator(self.n_items).to(self.device)
         self.D.apply(self.weights_init)
         self.optim_D = optim.Adam(self.D.parameters(), lr=args.D_lr, betas=(0.5, 0.9))
 
@@ -206,7 +218,7 @@ class Trainer(object):
         values = torch.from_numpy(cur_matrix.data)  #
         shape = torch.Size(cur_matrix.shape)
 
-        return torch.sparse.FloatTensor(indices, values, shape).to(torch.float32).cuda()  #
+        return torch.sparse.FloatTensor(indices, values, shape).to(torch.float32).to(self.device)  #
 
     def innerProduct(self, u_pos, i_pos, u_neg, j_neg):
         pred_i = torch.sum(torch.mul(u_pos, i_pos), dim=-1)
@@ -242,7 +254,7 @@ class Trainer(object):
         xf = xf.detach()
         xr = xr.detach()
 
-        alpha = torch.rand(args.batch_size * 2, 1).cuda()
+        alpha = torch.rand(args.batch_size * 2, 1).to(self.device)
         alpha = alpha.expand_as(xr)
 
         interpolates = alpha * xr + ((1 - alpha) * xf)
@@ -292,15 +304,15 @@ class Trainer(object):
         return topk_p, topk_id
 
     def ssl_loss_calculation(self, ssl_image_logit, ssl_text_logit, ssl_common_logit):
-        ssl_label_1_s2 = torch.ones(1, self.n_items).cuda()
-        ssl_label_0_s2 = torch.zeros(1, self.n_items).cuda()
+        ssl_label_1_s2 = torch.ones(1, self.n_items).to(self.device)
+        ssl_label_0_s2 = torch.zeros(1, self.n_items).to(self.device)
         ssl_label_s2 = torch.cat((ssl_label_1_s2, ssl_label_0_s2), 1)
         ssl_image_s2 = self.bce(ssl_image_logit, ssl_label_s2)
         ssl_text_s2 = self.bce(ssl_text_logit, ssl_label_s2)
         ssl_loss_s2 = ssl_image_s2 + ssl_text_s2
 
-        ssl_label_1_c2 = torch.ones(1, self.n_items * 2).cuda()
-        ssl_label_0_c2 = torch.zeros(1, self.n_items * 2).cuda()
+        ssl_label_1_c2 = torch.ones(1, self.n_items * 2).to(self.device)
+        ssl_label_0_c2 = torch.zeros(1, self.n_items * 2).to(self.device)
         ssl_label_c2 = torch.cat((ssl_label_1_c2, ssl_label_0_c2), 1)
         ssl_result_c2 = self.bce(ssl_common_logit, ssl_label_c2)
         ssl_loss_c2 = ssl_result_c2
@@ -381,10 +393,10 @@ class Trainer(object):
 
     def u_sim_calculation(self, users, user_final, item_final):
         topk_u = user_final[users]
-        u_ui = torch.tensor(self.ui_graph_raw[users].todense()).cuda()
+        u_ui = torch.tensor(self.ui_graph_raw[users].todense(), device=self.device)
 
         num_batches = (self.n_items - 1) // args.batch_size + 1
-        indices = torch.arange(0, self.n_items).cuda()
+        indices = torch.arange(0, self.n_items).to(self.device)
         u_sim_list = []
 
         for i_b in range(num_batches):
@@ -447,10 +459,11 @@ class Trainer(object):
                 inputf = torch.cat((image_u_sim_detach, text_u_sim_detach), dim=0)
                 predf = (self.D(inputf))
                 lossf = (predf.mean())
-                u_ui = torch.tensor(self.ui_graph_raw[users].todense()).cuda()
+                u_ui = torch.tensor(self.ui_graph_raw[users].todense(), device=self.device)
                 u_ui = F.softmax(u_ui - args.log_log_scale * torch.log(-torch.log(
                     torch.empty((u_ui.shape[0], u_ui.shape[1]), dtype=torch.float32).uniform_(0,
-                                                                                              1).cuda() + 1e-8) + 1e-8) / args.real_data_tau,
+                                                                                              1).to(
+                        self.device) + 1e-8) + 1e-8) / args.real_data_tau,
                                  dim=1)  # 0.002
                 u_ui += ui_u_sim_detach * args.ui_pre_scale
                 u_ui = F.normalize(u_ui, dim=1)
@@ -491,16 +504,16 @@ class Trainer(object):
                     self.text_iu_graph_tmp = self.text_ui_graph_tmp.T
                     self.image_ui_graph = self.sparse_mx_to_torch_sparse_tensor( \
                         self.csr_norm(self.image_ui_graph_tmp, mean_flag=True)
-                    ).cuda()
+                    ).to(self.device)
                     self.text_ui_graph = self.sparse_mx_to_torch_sparse_tensor(
                         self.csr_norm(self.text_ui_graph_tmp, mean_flag=True)
-                    ).cuda()
+                    ).to(self.device)
                     self.image_iu_graph = self.sparse_mx_to_torch_sparse_tensor(
                         self.csr_norm(self.image_iu_graph_tmp, mean_flag=True)
-                    ).cuda()
+                    ).to(self.device)
                     self.text_iu_graph = self.sparse_mx_to_torch_sparse_tensor(
                         self.csr_norm(self.text_iu_graph_tmp, mean_flag=True)
-                    ).cuda()
+                    ).to(self.device)
 
                     self.image_ui_index = {'x': [], 'y': []}
                     self.text_ui_index = {'x': [], 'y': []}
