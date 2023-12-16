@@ -103,10 +103,10 @@ class Trainer(object):
                     # set zeros as initialization
                     self.image_feats[masked_items_image] = np.zeros((1, self.image_feat_dim))
                     # get sparse adjacency matrix
-                    knn_val, knn_ind = torch.topk(torch.tensor(item_item, device=self.device), 20, dim=-1)
+                    knn_val, knn_ind = torch.topk(torch.tensor(item_item, device=self.device), 10, dim=-1)
                     items_cols = torch.flatten(knn_ind).to(self.device)
                     ir = torch.tensor(list(range(item_item.shape[0])), dtype=torch.int64, device=self.device)
-                    items_rows = torch.repeat_interleave(ir, 20).to(self.device)
+                    items_rows = torch.repeat_interleave(ir, 10).to(self.device)
                     # row, col = item_item.nonzero()
                     # edge_index = np.array([row, col])
                     # edge_index = torch.tensor(edge_index, dtype=torch.int64)
@@ -138,10 +138,10 @@ class Trainer(object):
                     # set zeros as initialization
                     self.text_feats[masked_items_text] = np.zeros((1, self.text_feat_dim))
                     # get sparse adjacency matrix
-                    knn_val, knn_ind = torch.topk(torch.tensor(item_item, device=self.device), 20, dim=-1)
+                    knn_val, knn_ind = torch.topk(torch.tensor(item_item, device=self.device), 10, dim=-1)
                     items_cols = torch.flatten(knn_ind).to(self.device)
                     ir = torch.tensor(list(range(item_item.shape[0])), dtype=torch.int64, device=self.device)
-                    items_rows = torch.repeat_interleave(ir, 20).to(self.device)
+                    items_rows = torch.repeat_interleave(ir, 10).to(self.device)
                     # row, col = item_item.nonzero()
                     # edge_index = np.array([row, col])
                     # edge_index = torch.tensor(edge_index, dtype=torch.int64)
