@@ -58,7 +58,7 @@ def parse_args():
     parser.add_argument('--seed', type=int, default=2022, help='Random seed')
     parser.add_argument('--dataset', nargs='?', default='baby', help='Choose a dataset from {sports, baby, clothing, tiktok, allrecipes}')
     parser.add_argument('--epoch', type=int, default=1000, help='Number of epoch.')  #default: 1000
-    parser.add_argument('--batch_size', type=int, default=256, help='Batch size.')
+    parser.add_argument('--batch_size', type=int, default=1024, help='Batch size.')
     parser.add_argument('--embed_size', type=int, default=64,help='Embedding size.')                     
     parser.add_argument('--D_lr', type=float, default=0.00025, help='Learning rate.')
     parser.add_argument('--topk', type=int, default=10, help='K value of k-NN sparsification')  
@@ -69,7 +69,7 @@ def parse_args():
     parser.add_argument('--gpu_id', type=int, default=-1, help='GPU id')
     parser.add_argument('--Ks', nargs='?', default='[10, 20, 50]', help='K value of ndcg/recall @ k')
     parser.add_argument('--regs', nargs='?', default='[1e-5,1e-5,1e-2]', help='for emb_loss.')  #default: '[1e-5,1e-5,1e-2]'
-    parser.add_argument('--lr', type=float, default=0.00056, help='Learning rate.')
+    parser.add_argument('--lr', type=float, default=0.0005, help='Learning rate.')
     parser.add_argument('--emm', default=1e-3, type=float, help='for feature embedding bpr')  #
     parser.add_argument('--L2_alpha', default=1e-3, type=float, help='')  #
     parser.add_argument('--weight_decay', default=1e-4, type=float, help='for opt_D')  #
@@ -87,7 +87,7 @@ def parse_args():
 
     #GAN
     parser.add_argument('--weight_size', nargs='?', default='[64, 64]', help='Output sizes of every layer')  #default: '[64, 64]'
-    parser.add_argument('--G_rate', default=0.00030, type=float, help='for D model1')  #
+    parser.add_argument('--G_rate', default=0.0001, type=float, help='for D model1')  #
     parser.add_argument('--G_drop1', default=0.31, type=float, help='for D model2')  #
     parser.add_argument('--G_drop2', default=0.5, type=float, help='')  #
     parser.add_argument('--gp_rate', default=1, type=float, help='gradient penal')  #
@@ -102,7 +102,7 @@ def parse_args():
     parser.add_argument('--geneGraph_rate', default=0.1, type=float, help='')  #
     parser.add_argument('--geneGraph_rate_pos', default=2, type=float, help='')  #
     parser.add_argument('--geneGraph_rate_neg', default=-1, type=float, help='')  #     
-    parser.add_argument('--m_topk_rate', default=0.0001, type=float, help='for reconstruct')  
+    parser.add_argument('--m_topk_rate', default=0.02, type=float, help='for reconstruct')
     parser.add_argument('--log_log_scale', default=0.00001, type=int, help='log_log_scale')  
     parser.add_argument('--point', default='', type=str, help='point')  
 
